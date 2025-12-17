@@ -1,0 +1,17 @@
+{
+  "id": "claude-code",
+  "name": "Claude Code",
+  "version": "0.12.6",
+  "description": "ACP wrapper for Anthropic's Claude",
+  "repository": "https://github.com/anthropics/claude-code",
+  "authors": ["Anthropic"],
+  "license": "proprietary",
+  "distribution": {
+    "npx": {
+      "package": "@zed-industries/claude-code-acp"
+    },
+    "bunx": {
+      "package": "@zed-industries/claude-code-acp"
+    }
+  }
+}

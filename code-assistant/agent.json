@@ -1,0 +1,33 @@
+{
+  "id": "code-assistant",
+  "name": "Code Assistant",
+  "version": "0.1.19",
+  "description": "AI-powered coding assistant",
+  "repository": "https://github.com/stippi/code-assistant",
+  "authors": ["Stephan Aßmus"],
+  "license": "MIT",
+  "distribution": {
+    "binary": {
+      "darwin-aarch64": {
+        "archive": "https://github.com/stippi/code-assistant/releases/download/v0.1.19/code-assistant-macos-aarch64.zip",
+        "cmd": "./code-assistant",
+        "args": ["acp"]
+      },
+      "darwin-x86_64": {
+        "archive": "https://github.com/stippi/code-assistant/releases/download/v0.1.19/code-assistant-macos-x86_64.zip",
+        "cmd": "./code-assistant",
+        "args": ["acp"]
+      },
+      "linux-x86_64": {
+        "archive": "https://github.com/stippi/code-assistant/releases/download/v0.1.19/code-assistant-linux-x86_64.zip",
+        "cmd": "./code-assistant",
+        "args": ["acp"]
+      },
+      "windows-x86_64": {
+        "archive": "https://github.com/stippi/code-assistant/releases/download/v0.1.19/code-assistant-windows-x86_64.zip",
+        "cmd": "./code-assistant.exe",
+        "args": ["--acp"]
+      }
+    }
+  }
+}

@@ -1,6 +1,9 @@
 # Generated files
 dist/
 
+# Verification sandboxes
+.sandbox/
+
 # Python
 __pycache__/
 *.py[cod]
