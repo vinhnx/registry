@@ -1,0 +1,90 @@
+name: Upload to S3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '*/agent.json'
+      - '*/extension.json'
+      - '*/icon.svg'
+      - '.github/workflows/**'
+      - '*.schema.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Registry
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build registry
+        run: uv run --with jsonschema .github/workflows/build_registry.py
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: registry
+          path: dist/
+
+  upload-s3:
+    name: Upload to S3
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: registry
+          path: dist/
+
+      - name: List dist contents
+        run: ls -la dist/
+
+      - name: Configure AWS CLI for R2
+        run: |
+          aws configure set aws_access_key_id "${{ secrets.S3_ACCESS_KEY_ID }}"
+          aws configure set aws_secret_access_key "${{ secrets.S3_SECRET_ACCESS_KEY }}"
+          aws configure set default.region auto
+
+      - name: Generate version string
+        id: version
+        run: echo "version=v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload versioned snapshot
+        env:
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        run: |
+          aws s3 sync dist/ "s3://${S3_BUCKET}/${{ steps.version.outputs.version }}/" \
+            --endpoint-url "${S3_ENDPOINT}" \
+            --cache-control "public, max-age=31536000, immutable"
+
+      - name: Upload to latest
+        env:
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        run: |
+          aws s3 sync dist/ "s3://${S3_BUCKET}/latest/" \
+            --endpoint-url "${S3_ENDPOINT}" \
+            --cache-control "public, max-age=300" \
+            --delete
+
+      - name: Print CDN URLs
+        env:
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+        run: |
+          echo "## Uploaded to S3" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Versioned: \`${{ steps.version.outputs.version }}/\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Latest: \`latest/\`" >> "$GITHUB_STEP_SUMMARY"
