@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -98,3 +98,47 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Versioned: \`${S3_PREFIX}/${{ steps.version.outputs.version }}/\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Latest: \`${S3_PREFIX}/latest/\`" >> "$GITHUB_STEP_SUMMARY"
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Build registry
+        run: uv run --with jsonschema .github/workflows/build_registry.py
+
+      - name: Generate version string
+        id: version
+        run: echo "version=v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Create versioned release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.version.outputs.version }}" \
+            --title "Registry ${{ steps.version.outputs.version }}" \
+            --notes "Auto-generated registry build" \
+            dist/registry.json \
+            dist/agent.schema.json \
+            dist/registry.schema.json \
+            dist/*.svg
+
+      - name: Update latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest \
+            --title "Registry (latest)" \
+            --notes "Latest registry build - ${{ steps.version.outputs.version }}" \
+            dist/registry.json \
+            dist/agent.schema.json \
+            dist/registry.schema.json \
+            dist/*.svg
